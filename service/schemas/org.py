@@ -22,3 +22,8 @@ class CreateOrgResponse(CamelModel):
     org_id: str
     anchor_day: int
     quotas: list[QuotaStatus]
+
+
+class OrgSummary(CamelModel):
+    org_id: str
+    resets_at: str
