@@ -1,8 +1,9 @@
 from service.schemas.base import CamelModel
+from service.schemas.feature import Feature
 
 
 class OrgQuotaConfigRequest(CamelModel):
-    feature: str
+    feature: Feature
     limit: int
 
 
@@ -11,7 +12,7 @@ class CreateOrgRequest(CamelModel):
 
 
 class QuotaStatus(CamelModel):
-    feature: str
+    feature: Feature
     limit: int
     used: int
     period_start: str

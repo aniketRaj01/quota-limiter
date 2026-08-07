@@ -2,8 +2,7 @@ from datetime import datetime, timezone
 from sqlite3 import Connection
 
 from service.repos import quota_repo
-
-FEATURE_CONTAINER_TRACKING = "container-tracking"
+from service.schemas.feature import Feature
 
 _SEED_ORGS = [
     {"org_id": "org_demo", "limit": 20},
@@ -24,7 +23,7 @@ def seed_data(conn: Connection) -> None:
         quota_repo.insert_quota(
             conn,
             org_id=org["org_id"],
-            feature=FEATURE_CONTAINER_TRACKING,
+            feature=Feature.CONTAINER_TRACKING.value,
             quota_limit=org["limit"],
             anchor_day=anchor_day,
             period_start=period_start,
