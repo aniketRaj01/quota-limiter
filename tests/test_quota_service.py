@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from datetime import date, timedelta
 
+from service.db.connection import get_connection, get_lock
+from service.repos import quota_repo
 from service.services import org_service
 from service.services.quota import ConsumeStatus, check_and_consume
 
@@ -113,3 +115,24 @@ def test_stale_period_with_request_larger_than_limit_after_rollover(client):
 
     assert result.status == ConsumeStatus.INSUFFICIENT_QUOTA
     assert result.used == 0
+
+
+def test_clamped_anchor_day_rolls_over_correctly_into_shorter_month(client):
+    org_id = "org_anchor31_boundary_test"
+    conn = get_connection()
+    with get_lock():
+        quota_repo.insert_quota(
+            conn,
+            org_id=org_id,
+            feature=FEATURE,
+            quota_limit=100,
+            anchor_day=31,
+            period_start="2026-01-31",
+        )
+        conn.commit()
+
+    result = check_and_consume(org_id, FEATURE, 10, now=date(2026, 3, 1))
+
+    assert result.status == ConsumeStatus.OK
+    assert result.used == 10
+    assert result.period_start == date(2026, 2, 28)
