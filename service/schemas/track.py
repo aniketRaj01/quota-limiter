@@ -16,3 +16,19 @@ class TrackResponse(CamelModel):
     failed_container_ids: list[str]
     units_refunded: int
     remaining: int
+
+
+class InsufficientQuotaResponse(CamelModel):
+    status: str
+    org_id: str
+    feature: str
+    requested: int
+    remaining: int
+    limit: int
+    resets_at: str
+
+
+class ConflictResponse(CamelModel):
+    status: str
+    request_id: str
+    reason: str
