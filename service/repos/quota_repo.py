@@ -64,3 +64,64 @@ def org_exists(conn: Connection, org_id: str) -> bool:
         {"org_id": org_id},
     ).fetchone()
     return row is not None
+
+
+def deduct(
+    conn: Connection,
+    org_id: str,
+    feature: str,
+    units: int,
+    period_start: str,
+) -> int | None:
+    row = conn.execute(
+        """
+        UPDATE quotas
+        SET used = used + :units
+        WHERE org_id = :org_id AND feature = :feature
+          AND period_start = :period_start
+          AND used + :units <= quota_limit
+        RETURNING used
+        """,
+        {
+            "org_id": org_id,
+            "feature": feature,
+            "units": units,
+            "period_start": period_start,
+        },
+    ).fetchone()
+    return row["used"] if row else None
+
+
+def rollover(
+    conn: Connection,
+    org_id: str,
+    feature: str,
+    old_period_start: str,
+    new_period_start: str,
+) -> None:
+    conn.execute(
+        """
+        UPDATE quotas
+        SET period_start = :new_period_start, used = 0
+        WHERE org_id = :org_id AND feature = :feature AND period_start = :old_period_start
+        """,
+        {
+            "org_id": org_id,
+            "feature": feature,
+            "old_period_start": old_period_start,
+            "new_period_start": new_period_start,
+        },
+    )
+
+
+def credit(conn: Connection, org_id: str, feature: str, amount: int) -> int | None:
+    row = conn.execute(
+        """
+        UPDATE quotas
+        SET used = used - :amount
+        WHERE org_id = :org_id AND feature = :feature AND used - :amount >= 0
+        RETURNING used
+        """,
+        {"org_id": org_id, "feature": feature, "amount": amount},
+    ).fetchone()
+    return row["used"] if row else None
