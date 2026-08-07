@@ -5,6 +5,9 @@ __pycache__/
 .DS_Store
 *.egg-info/
 
+# Load test output — reproducible on demand via load_test/load_test.py, not committed.
+load_test/results.txt
+
 # Docs — working drafts, not ready to commit yet. Un-ignore DESIGN.md (and any other
 # deliverable docs) explicitly before final submission.
 *.md
