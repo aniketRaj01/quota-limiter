@@ -9,9 +9,9 @@ response caching), not rejection short-circuits.
 
 Usage:
     ./run.sh &                     # start the server first
-    python scripts/load_test.py [--base-url http://localhost:8000]
-                                 [--concurrency 50] [--requests 2000]
-                                 [--output scripts/load_test_results.txt]
+    python load_test/load_test.py [--base-url http://localhost:8000]
+                                   [--concurrency 50] [--requests 2000]
+                                   [--output load_test/results.txt]
 """
 
 from __future__ import annotations
@@ -104,7 +104,7 @@ def main() -> None:
     parser.add_argument("--base-url", default="http://localhost:8000")
     parser.add_argument("--concurrency", type=int, default=50)
     parser.add_argument("--requests", type=int, default=2000)
-    parser.add_argument("--output", default="scripts/load_test_results.txt")
+    parser.add_argument("--output", default="load_test/results.txt")
     args = parser.parse_args()
 
     results, wall_clock_s = asyncio.run(run(args.base_url, args.concurrency, args.requests))
