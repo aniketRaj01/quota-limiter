@@ -1,0 +1,48 @@
+Load test results — POST /v1/features/container-tracking/track
+Run: 2026-08-07, macOS dev machine, single uvicorn worker (no --reload), server started via
+`uvicorn service.main:app --host 127.0.0.1 --port 8123`, client: scripts/load_test.py
+(asyncio + httpx.AsyncClient, real HTTP over loopback, connection pool sized to concurrency).
+Each request: 3 containerIds, none containing "fail", fresh org with ample headroom so every
+request is a real full-success path (idempotency check + atomic deduct + simulated downstream
++ response cache write) — not a fast-path rejection.
+
+=== Single sustained run: concurrency=50, 2000 requests ===
+requests:       2000
+wall clock:     4.288s
+throughput:     466.4 req/s
+status codes:   {200: 2000}
+latency p50:    69.335ms
+latency p95:    308.715ms
+latency p99:    452.842ms
+latency mean:   103.935ms
+
+=== Concurrency sweep: 1000 requests per level ===
+concurrency | throughput (req/s) | p50 (ms) | p95 (ms) | p99 (ms)
+     1      |        996.6       |   0.956  |   1.080  |   1.167
+     5      |       1262.8       |   2.997  |   3.199  |   6.218
+    10      |        633.7       |  10.499  |  12.559  |  15.110
+    20      |        461.5       |  37.700  |  90.557  | 119.127
+    30      |        402.1       |  52.634  | 201.328  | 292.676
+    50      |        411.7       |  80.966  | 347.984  | 479.046
+
+=== Reading these numbers ===
+At concurrency=1, a full HTTP round trip through the whole stack (idempotency check, atomic
+deduct, simulated downstream, refund-if-needed, response caching) is well under 1ms — consistent
+with the ~0.013ms in-process check_and_consume-only benchmark in tests/test_quota_latency.py plus
+a small, expected amount of ASGI/Pydantic/network overhead.
+
+The <10ms per-operation target holds at low concurrency but degrades as concurrency rises, and
+throughput itself peaks around concurrency=5 (~1260 req/s) then *declines* as concurrency
+increases further (633 req/s at c=10, ~400-460 req/s at c=20-50). That's the signature of
+queueing/contention overhead growing faster than the work being done, not any single operation
+getting slower — the per-operation cost proven separately (test_quota_latency.py) never changed.
+
+Root cause, per this build's own design (DESIGN-NOTES.md): every quota mutation is serialized
+through one process-wide threading.Lock guarding the single :memory: SQLite connection. That
+lock is correct and necessary for this build's atomicity guarantee, but it means total system
+throughput is capped by (lock hold time + Python thread-scheduling/GIL overhead per acquisition)
+regardless of how many requests arrive concurrently — and CPython's lock contention overhead
+grows superlinearly with the number of waiting threads, which is exactly what the sweep shows.
+This is the honest limitation the multi-instance/Redis scale-out section of DESIGN-NOTES.md
+exists to address: a single in-process lock is a real ceiling around a few hundred to ~1000
+req/s on this hardware, well below what 50,000 orgs would require.
