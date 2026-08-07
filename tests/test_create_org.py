@@ -46,20 +46,13 @@ def test_create_org_computes_period_start_and_resets_at(client):
     assert quota["resetsAt"] == next_reset_at(now, body["anchorDay"])
 
 
-def test_create_org_inserts_one_quota_row_per_feature(client):
+def test_create_org_rejects_unknown_feature(client):
     response = client.post(
         "/v1/orgs",
-        json={
-            "quotas": [
-                {"feature": "container-tracking", "limit": 30},
-                {"feature": "other-feature", "limit": 15},
-            ]
-        },
+        json={"quotas": [{"feature": "not-a-real-feature", "limit": 30}]},
     )
 
-    body = response.json()
-    limits_by_feature = {q["feature"]: q["limit"] for q in body["quotas"]}
-    assert limits_by_feature == {"container-tracking": 30, "other-feature": 15}
+    assert response.status_code == 422
 
 
 def test_created_org_appears_in_list(client):

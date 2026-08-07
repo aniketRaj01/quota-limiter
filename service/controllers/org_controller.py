@@ -5,7 +5,7 @@ from service.services import org_service
 
 
 def create_org(request: CreateOrgRequest) -> CreateOrgResponse:
-    quota_configs = [(q.feature, q.limit) for q in request.quotas]
+    quota_configs = [(q.feature.value, q.limit) for q in request.quotas]
     try:
         result = org_service.create_org(quota_configs)
     except org_service.DuplicateOrgError as exc:
