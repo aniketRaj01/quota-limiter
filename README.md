@@ -136,3 +136,11 @@ service/
 tests/          unit / integration / concurrency / performance, see above
 load_test/      real load generator against a live server
 ```
+
+## Scaling to 50,000 orgs
+
+Not implemented — this build is a single-process design (see "What's implemented" above).
+The target architecture (shared Redis for the atomic hot path, Postgres as the durable
+system of record) is described and diagrammed in [DESIGN.md](DESIGN.md#scaling-to-50000-orgs-not-built),
+and sketched at a higher level here:
+[High-level architecture diagram](https://excalidraw.com/#json=OA2OVt-V07uMptAjaQRM0,U7xsKZ0m_Uj1uo3fp-bXZQ).
