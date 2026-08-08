@@ -8,7 +8,9 @@ __pycache__/
 # Load test output — reproducible on demand via load_test/load_test.py, not committed.
 load_test/results.txt
 
-# Docs — working drafts, not ready to commit yet. Un-ignore DESIGN.md (and any other
-# deliverable docs) explicitly before final submission.
+# Docs — working drafts, not ready to commit yet. README.md and DESIGN.md are the
+# actual deliverables and are tracked; everything else (*.md/*.pdf) stays local.
 *.md
 *.pdf
+!README.md
+!DESIGN.md
