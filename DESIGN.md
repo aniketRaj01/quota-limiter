@@ -243,11 +243,25 @@ events asynchronously.
 
 ## AI-assistance disclosure
 
-Design decisions (atomic primitive, idempotency key shape, 1-minute lazy TTL,
-all-or-nothing batch policy, per-org anchor reset, `:memory:` SQLite + single connection)
-were made and recorded before implementation. Implementation — all code under `service/`,
-the full test suite, load-test script, and test-suite reorganization — was AI-assisted
-(Claude Code) against those decisions. Two narrower calls were made collaboratively
-during build-out rather than pre-planned: skipping the idempotency row on a failed
-deduct, and the lock-vs-atomic-primitive caveat above, which surfaced from interrogating
-what the concurrency tests actually prove.
+**Defined by me, before implementation:**
+- Tech stack — Python 3, FastAPI, stdlib `sqlite3`
+- Swagger/OpenAPI for interactive docs
+- Test-driven development workflow — tests written and reviewed before implementation
+- MVC layering — `routes → controllers → services → repos`
+- Initial project setup
+
+**Key design decisions were mine; AI was used to research pros/cons of alternatives before
+deciding:**
+- 1-minute idempotency TTL, and treating the same `requestId` within that window as a retry
+- Per-org anchor day for monthly reset, instead of a global calendar month
+- All-or-nothing batch policy, instead of partial fulfillment
+- Pre-deduct + compensating refund on downstream failure, instead of deduct-after-success
+- Atomic conditional `UPDATE ... RETURNING` as the concurrency primitive, instead of
+  read-then-write
+- Payload fingerprint alongside `requestId`, to catch key reuse with a different payload
+- `:memory:` SQLite, single connection + lock, as this build's storage
+- Redis + Postgres as the target scale-out architecture
+
+**Implementation:** most of the code (`service/`, tests, load-test script) was written by
+AI (Claude Code) against the above. PRs were created via AI tooling at my direction,
+reviewed and merged by me.
